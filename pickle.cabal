@@ -1,0 +1,34 @@
+name:                pickle
+version:             0.1.0.0
+synopsis:            Hakyll-like static site generator based more tightly on Pandoc
+description:         Please see README.md
+homepage:            https://github.com/themattchan/pickle
+license:             BSD3
+license-file:        LICENSE
+author:              Matthew Chan
+maintainer:          matt@themattchan.com
+copyright:           2016 Matthew Chan
+category:            Web
+build-type:          Simple
+-- extra-source-files:
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Lib
+  build-depends:       base >= 4.7 && < 5
+  default-language:    Haskell2010
+
+executable pickle
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , pickle
+                     , containers
+                     , transformers
+                     , pandoc
+                     , directory
+                     , filepath
+                     , turtle
+  default-language:    Haskell2010
