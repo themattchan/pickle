@@ -28,6 +28,8 @@ executable pickle
                      , containers
                      , transformers
                      , pandoc >= 1.17 && < 1.18
+                     , blaze-html
+                     , blaze-markup
                      , directory
                      , filepath
                      , turtle

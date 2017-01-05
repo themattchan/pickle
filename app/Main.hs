@@ -15,8 +15,15 @@ import System.FilePath.Posix
 import Text.Pandoc
 import Text.Pandoc.Error
 
+import Text.Blaze
+
 import qualified Config
 import Files
+
+type Pickle = ExceptT PickleError IO
+
+runPickle :: Pickle a -> IO a
+runPickle = fmap (bimap (error . show) id) . runExceptT
 
 data PickleError = FileNotFound | PicklePandocError PandocError
 
@@ -59,13 +66,13 @@ postExtractMeta p@Post{..} = PostMeta
   , postMetaFilename   = postDstPath </> fromMaybe postName postOutName
   }
 
-parseAsPandoc :: FilePath -> ExceptT PickleError IO Pandoc
+parseAsPandoc :: FilePath -> Pickle Pandoc
 parseAsPandoc fp = ExceptT $ first PicklePandocError . reader def <$> readFile fp
   where
     StringReader reader = getPandocReader . getFileFormat $ fp
 
 -- | relative filepaths
-readPost :: FilePath -> ExceptT PickleError IO Post
+readPost :: FilePath -> Pickle Post
 readPost fp = do
   isDir <- liftIO $ doesDirectoryExist fp
   if isDir then readPostFolder else readPostSingle
@@ -90,13 +97,14 @@ readPost fp = do
 
     filterContents = partition ((`elem` contentFileNames) . takeBaseName)
 
+renderPandoc :: Pandoc -> Html
+renderPandoc = writeHtml def
+
 -- | Write the post to disk, return metadata
-writePost :: Post -> IO PostMeta
+writePost :: Post -> Pickle PostMeta
 writePost Post{..} = undefined
 
-
-
-buildIndex :: [PostMeta] -> String
+buildIndex :: [PostMeta] -> Html
 buildIndex = undefined
 
 -- categories, tags, rss, ...
