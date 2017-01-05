@@ -1,12 +1,25 @@
 module Files where
+import System.FilePath.Posix
+import Text.Pandoc (Reader, readers)
 
 isDotfile :: FilePath -> Bool
-isDotfile = isPrefixOf "."
+isDotfile = null . takeBaseName
 
-data Formats = Markdown | OrgMode | Lhs | Html
+data InputFormat = Markdown | OrgMode | Html -- | Lhs
 
-instance Show Formats where
-  show Markdown = "md"
+instance Show InputFormat where
+  show Markdown = "markdown"
   show OrgMode  = "org"
-  show Lhs      = "lhs"
+--  show Lhs      = "lhs"
   show Html     = "html"
+
+getFileFormat :: FilePath -> Maybe InputFormat
+getFileFormat fp = case tail (takeExtension fp) of
+  "md"   -> Just Markdown
+  "txt"  -> Just Markdown
+  "org"  -> Just OrgMode
+  "html" -> Just Html
+  _      -> Nothing
+
+getPandocReader :: InputFormat -> Maybe Reader
+getPandocReader = flip lookup readers . show

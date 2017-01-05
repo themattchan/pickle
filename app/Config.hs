@@ -3,7 +3,7 @@ module Config where
 import System.Directory
 import System.FilePath.Posix
 
-type PostHierarchy = YearMonth
+data PostHierarchy = YearMonth
                    | YearMonthDay
                    | Flat
                    | Category

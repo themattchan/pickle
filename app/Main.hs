@@ -3,20 +3,33 @@
 module Main where
 
 import Control.Monad
+import Control.Monad.Trans.Except
+
+import Data.Bifunctor
 import Data.List
 import Data.Maybe
+
 import System.Directory
 import System.FilePath.Posix
-import Text.Pandoc
 
-import qualified Config as Config
+import Text.Pandoc
+import Text.Pandoc.Error
+
+import qualified Config
 import Files
 
+data PickleError = FileNotFound | PicklePandocError PandocError
+
+-- | Extractor methods for the Pandoc type defined in 'Text.Pandoc'
 pandocMeta :: Pandoc -> Meta
 pandocMeta (Pandoc m _) = m
 
 pandocBody :: Pandoc -> [Block]
 pandocBody (Pandoc _ b) = b
+
+-- | Names of files containing the text of an article in a folder
+contentFileNames :: [String]
+contentFileNames = [ "index" ]
 
 -- | Structure for posts
 data Post = Post
@@ -26,18 +39,18 @@ data Post = Post
   -- ^ source file name
   , postOutName       :: Maybe FilePath
   -- ^ out file name, if different
-  , postSrcBundlePath :: Maybe FilePath
+  , postSrcBundle     :: Maybe (FilePath, [FilePath])
   -- ^ if it is in a folder, save the folder name for copying assets
-  , postDstPath       :: FilePath
-  -- ^ relative path
+  -- TODO: maybe use the 'MediaBag' from Pandoc?
   }
-
 
 -- | Metadata for posts
 data PostMeta = PostMeta
   { postMetaPandocMeta :: Meta
   , postMetaFilename   :: FilePath
   -- ^ full location in output
+  , postMetaDstPath   :: FilePath
+  -- ^ calculated from metadata (relative to generated site)
   }
 
 postExtractMeta :: Post -> PostMeta
@@ -46,21 +59,41 @@ postExtractMeta p@Post{..} = PostMeta
   , postMetaFilename   = postDstPath </> fromMaybe postName postOutName
   }
 
+parseAsPandoc :: FilePath -> ExceptT PickleError IO Pandoc
+parseAsPandoc fp = ExceptT $ first PicklePandocError . reader def <$> readFile fp
+  where
+    StringReader reader = getPandocReader . getFileFormat $ fp
 
 -- | relative filepaths
-readPost :: FilePath -> IO Post
+readPost :: FilePath -> ExceptT PickleError IO Post
 readPost fp = do
-  isDir <- doesDirectoryExist fp
-  if isDir then
-    let postSrcBundlePath = Just fp
-    in undefined
-  else do
-    let postName = fp
-    in undefined
+  isDir <- liftIO $ doesDirectoryExist fp
+  if isDir then readPostFolder else readPostSingle
+  where
+    readPostFolder = do
+      (contents, assets) <- filterContents <$> listDirectory fp
+      if null contents
+      then throwE FileNotFound
+      else do
+        let postName = fp </> head contents
+        postContent <- parseAsPandoc postName
+        let postSrcBundle = Just (fp, assets)
+            postOutName = Nothing -- TODO
+        return Post{..}
 
+    readPostSingle = do
+      postContent <- parseAsPandoc fp
+      let postName = fp
+          postOutName = Nothing -- TODO
+          postSrcBundle = Nothing
+      return Post{..}
 
+    filterContents = partition ((`elem` contentFileNames) . takeBaseName)
+
+-- | Write the post to disk, return metadata
 writePost :: Post -> IO PostMeta
-writePost = undefined
+writePost Post{..} = undefined
+
 
 
 buildIndex :: [PostMeta] -> String
@@ -69,10 +102,10 @@ buildIndex = undefined
 -- categories, tags, rss, ...
 
 
-main :: IO ()
-main = do
-  setCurrentDirectory posts
-  postsd <- listDirectory posts
-  let reads = map (posts </>) . filter (not . isDotfile) $ postsd
-  print reads
-  mapM_ (readFile >=> print) reads
+-- main :: IO ()
+-- main = do
+--   setCurrentDirectory posts
+--   postsd <- listDirectory posts
+--   let reads = map (posts </>) . filter (not . isDotfile) $ postsd
+--   print reads
+--   mapM_ (readFile >=> print) reads

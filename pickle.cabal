@@ -27,7 +27,7 @@ executable pickle
                      , pickle
                      , containers
                      , transformers
-                     , pandoc
+                     , pandoc >= 1.17 && < 1.18
                      , directory
                      , filepath
                      , turtle
