@@ -24,6 +24,7 @@ import qualified Text.Blaze.Html4.Strict as B
 
 import qualified Pickle.Config as Config
 import Pickle.Files
+import Pickle.Utils
 
 type Pickle = EitherT PickleError IO
 
@@ -88,13 +89,16 @@ data PostMeta = PostMeta
 --   }
 
 parseAsPandoc :: FilePath -> Pickle Pandoc
-parseAsPandoc fp =  EitherT $ first PicklePandocError <$> parsedPd
+parseAsPandoc fp = parsedPd
   where
-    reader = hoistEither $ maybeToEither $ getPandocReader =<< getFileFormat fp
+    reader = hoistEither
+           $ note mempty
+           $ getPandocReader =<< getFileFormat fp
+
     parsedPd = do
-      file <- readFile fp
+      file <- lift $ readFile fp
       StringReader r <- reader
-      return $ r def file
+      EitherT $ first PicklePandocError <$> r def file
 
 -- | relative filepaths
 readPost :: FilePath -> Pickle Post
