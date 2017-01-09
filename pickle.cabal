@@ -15,16 +15,11 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib
+  exposed-modules:     Pickle
+                     , Pickle.Config
+                     , Pickle.Files
+                     , Pickle.Main
   build-depends:       base >= 4.7 && < 5
-  default-language:    Haskell2010
-
-executable pickle
-  hs-source-dirs:      app
-  main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       base
-                     , pickle
                      , containers
                      , transformers
                      , pandoc >= 1.17 && < 1.18
@@ -33,4 +28,13 @@ executable pickle
                      , directory
                      , filepath
                      , turtle
+                     , either
+  default-language:    Haskell2010
+
+executable pickle
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , pickle
   default-language:    Haskell2010

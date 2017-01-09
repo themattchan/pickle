@@ -1,4 +1,5 @@
-module Files where
+module Pickle.Files where
+
 import System.FilePath.Posix
 import Text.Pandoc (Reader, readers)
 

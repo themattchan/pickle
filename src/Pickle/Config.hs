@@ -1,4 +1,4 @@
-module Config where
+module Pickle.Config where
 
 import System.Directory
 import System.FilePath.Posix
