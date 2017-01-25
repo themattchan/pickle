@@ -5,6 +5,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Either
+import Control.Monad.Trans.Reader
 
 import Data.Bifunctor
 import Data.List
@@ -18,23 +19,25 @@ import Text.Pandoc
 import Text.Pandoc.Error
 import qualified Data.Text.Lazy as T
 
-import Pickle.Config
+import qualified Pickle.Config as Config
 
 --------------------------------------------------------------------------------
 -- * Pickle monad
 
-type Pickle = EitherT PickleError IO
+type Pickle = ReaderT Config.SiteConfig (EitherT PickleError IO)
 
-runPickle :: Pickle a -> IO a
-runPickle = fmap (either (error . show) id) . runEitherT
+runPickle :: Config.SiteConfig -> Pickle a -> IO a
+runPickle cfg = fmap (either (error . show) id)
+              . runEitherT
+              . flip runReaderT cfg
 
 pickleAssertIO :: (a -> IO Bool) -> a -> Pickle ()
-pickleAssertIO t a = do
+pickleAssertIO t a = lift $ do
   p <- liftIO $ t a
   if p then right () else left FileNotFound
 
 pickleAssert :: (a -> Bool) -> a -> Pickle ()
-pickleAssert t a = if t a then right () else left FileNotFound -- FIXME
+pickleAssert t a = lift $ if t a then right () else left FileNotFound -- FIXME
 
 --------------------------------------------------------------------------------
 -- * Errors
