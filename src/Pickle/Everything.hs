@@ -1,7 +1,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Pickle.Main where
+-- | this is a dump of the whole program for now...
+module Pickle.Everything where
 
 import Control.Applicative
 import Control.Monad
@@ -19,8 +20,10 @@ import System.FilePath.Posix
 
 import Text.Pandoc
 import Text.Pandoc.Error
+import qualified Data.Text.Lazy as T
 
 import qualified Text.Blaze.Html4.Strict as B
+import qualified Text.Blaze.Html.Renderer.Text as B (renderHtml)
 
 import qualified Pickle.Config as Config
 import Pickle.Files
@@ -136,14 +139,14 @@ buildIndex = undefined
 
 -- categories, tags, rss, ...
 
-
 main :: IO ()
 main = do
+  currd <- getCurrentDirectory
+  let posts = currd </> "posts"
   setCurrentDirectory posts
   postsd <- listDirectory posts
   let reads = map (posts </>) . filter (not . isDotfile) $ postsd
-  print reads
+--  print reads
   mapM_ (readFile >=> print) reads
   post <- runPickle $ readPost "2014-08-17-karabiner-settings.md"
-  print post
-  where posts = "posts"
+  writeFile "foo.html" $ T.unpack $ B.renderHtml $ writeHtml def (postContent post)

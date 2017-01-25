@@ -18,7 +18,8 @@ library
   exposed-modules:     Pickle
                      , Pickle.Config
                      , Pickle.Files
-                     , Pickle.Main
+                     , Pickle.Everything
+                     , Pickle.Template
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , transformers
@@ -29,6 +30,7 @@ library
                      , filepath
                      , turtle
                      , either
+                     , text
   default-language:    Haskell2010
 
 executable pickle

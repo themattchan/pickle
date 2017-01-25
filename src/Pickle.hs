@@ -1,9 +1,11 @@
 module Pickle
   ( module Pickle.Config
   , module Pickle.Files
-  , module Pickle.Main
+  , module Pickle.Everything
+  , module Pickle.Template
   ) where
 
 import Pickle.Config
 import Pickle.Files
-import Pickle.Main
+import Pickle.Everything
+import Pickle.Template
