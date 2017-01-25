@@ -18,6 +18,41 @@ import Text.Pandoc
 import Text.Pandoc.Error
 import qualified Data.Text.Lazy as T
 
+import Pickle.Config
+
+--------------------------------------------------------------------------------
+-- * Pickle monad
+
+type Pickle = EitherT PickleError IO
+
+runPickle :: Pickle a -> IO a
+runPickle = fmap (either (error . show) id) . runEitherT
+
+pickleAssertIO :: (a -> IO Bool) -> a -> Pickle ()
+pickleAssertIO t a = do
+  p <- liftIO $ t a
+  if p then right () else left FileNotFound
+
+pickleAssert :: (a -> Bool) -> a -> Pickle ()
+pickleAssert t a = if t a then right () else left FileNotFound -- FIXME
+
+--------------------------------------------------------------------------------
+-- * Errors
+
+data PickleError
+  = UnknownError
+  | FileNotFound
+  | UnknownPropertyError
+  | PicklePandocError PandocError
+  deriving (Show)
+
+instance Monoid PickleError where
+  mempty = UnknownError
+  a `mappend` _ = a
+
+--------------------------------------------------------------------------------
+-- * Posts
+
 -- | Structure for posts
 data Post = Post
   { postContent       :: Pandoc
@@ -29,6 +64,7 @@ data Post = Post
   , postSrcBundle     :: Maybe (FilePath, [FilePath])
   -- ^ if it is in a folder, save the folder name for copying assets
   -- TODO: maybe use the 'MediaBag' from Pandoc?
+  , postDate :: String
 --  , postMeta          :: PostMeta
   } deriving Show
 
@@ -39,33 +75,3 @@ data PostMeta = PostMeta
   , postMetaDstPath   :: FilePath
   -- ^ calculated from metadata (relative to generated site)
   } deriving Show
-
-type Pickle = EitherT PickleError IO
-
-runPickle :: Pickle a -> IO a
-runPickle = fmap (either (error . show) id) . runEitherT
-
-data PickleError
-  = UnknownError
-  | FileNotFound
-  | PicklePandocError PandocError
-  deriving (Show)
-
-instance Monoid PickleError where
-  mempty = UnknownError
-  a `mappend` _ = a
-
-pickleAssertIO :: (a -> IO Bool) -> a -> Pickle ()
-pickleAssertIO t a = do
-  p <- liftIO $ t a
-  if p then right () else left FileNotFound
-
-pickleAssert :: (a -> Bool) -> a -> Pickle ()
-pickleAssert t a = if t a then right () else left FileNotFound -- FIXME
-
--- | Extractor methods for the Pandoc type defined in 'Text.Pandoc'
-pandocMeta :: Pandoc -> Meta
-pandocMeta (Pandoc m _) = m
-
-pandocBody :: Pandoc -> [Block]
-pandocBody (Pandoc _ b) = b

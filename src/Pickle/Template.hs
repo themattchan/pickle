@@ -19,11 +19,9 @@ import Text.Blaze.Html5
 import Text.Blaze.Html5.Attributes hiding (title, style, form)
 import qualified Text.Blaze.Html5.Attributes as A
 -- import qualified Text.Blaze.Html.Renderer.Text as B (renderHtml)
-import Text.Pandoc
-import Text.Pandoc.Definition
-import Text.Pandoc.Walk
 
 import Pickle.Types
+import Pickle.Pandoc
 
 --------------------------------------------------------------------------------
 
@@ -34,6 +32,8 @@ cssImport link = string ("@import " <> show link <> ";")
 script0 = script ""
 
 maybeRender f = fromMaybe mempty . fmap f
+
+nbsp = preEscapedString "&nbsp;"
 
 mathJax  = "MathJax.Hub.Config({ tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]} });"
 googAnalytics = "(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create', 'UA-22479172-1', 'auto');ga('send', 'pageview');"
@@ -72,14 +72,14 @@ myHead = head $ do
 myHeader h sub = do
   header $ do
     h1 ! class_ "name pull-left" $ do
-      h <> sub
+      h <> nbsp <> sub
 --      string h <> small (string sub)
   div ! A.style "clear:both" $ ""
 
 myBlogHeader = do
   header $ do
     h1 ! class_ "name pull-left" $ do
-      string "Matt Chan" <> small (a ! href "/blog" $ string "Blog")
+      string "Matt Chan" <> nbsp <> small (a ! href "/blog" $ string "Blog")
     h1 ! class_ "pull-right" $ do
       form ! attrs [ id "search"
                    , class_ "navbar-search"
@@ -115,14 +115,6 @@ myPage h sub content = do
     content
   br; a ! href "../" $ preEscapedString "&larr; back";
   br;br;br
-
-renderPandoc :: Pandoc -> Html
-renderPandoc = writeHtml def
-
-pandocUnmeta = query go where
-  go (Str s) = s
-  go (Space) = " "
-  go s       = error ("[pandocUnmeta] fill in pattern " <> show s)
 
 myBlogPost :: Post -> Html
 myBlogPost post@Post{..} =

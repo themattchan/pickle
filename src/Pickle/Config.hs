@@ -22,10 +22,9 @@ data SiteConfig = SiteConfig
   -- ^ how the posts should be structured,
   -- e.g. YearMonth  /blog/2016/04/my-great-post/index.html
   --      Category   /blog/haskell/haskell-for-category-theorists/index.html
-
-  , configHtmlTemplate :: Maybe String
-  -- ^ initialise this yourself, also multiple templates and composition is not supported
   } deriving Show
+
+-- TODO: add a template record?
 
 defaultConfig :: SiteConfig
 defaultConfig = SiteConfig
@@ -34,5 +33,4 @@ defaultConfig = SiteConfig
   , configOutDir         = "html"
   , configPostsOutDir    = Nothing
   , configPostsOutFormat = YearMonth
-  , configHtmlTemplate   = Nothing
   }

@@ -30,9 +30,10 @@ import qualified Pickle.Config as Config
 import Pickle.Files
 import Pickle.Utils
 import Pickle.Template
-
+import Pickle.Pandoc
 
 -- | Names of files containing the text of an article in a folder
+-- TODO move to config, add a reader
 contentFileNames :: [String]
 contentFileNames = [ "index" ]
 
@@ -42,17 +43,6 @@ contentFileNames = [ "index" ]
 --   , postMetaFilename   = postDstPath </> fromMaybe postName postOutName
 --   }
 
-parseAsPandoc :: FilePath -> Pickle Pandoc
-parseAsPandoc fp = parsedPd
-  where
-    reader = hoistEither
-           $ note mempty
-           $ getPandocReader =<< getFileFormat fp
-
-    parsedPd = do
-      file <- lift $ readFile fp
-      StringReader r <- reader
-      EitherT $ first PicklePandocError <$> r def file
 
 -- | relative filepaths
 readPost :: FilePath -> Pickle Post
@@ -71,6 +61,7 @@ readPost fp = readPostFolder <|> readPostSingle
     readPostSingle = do
       pickleAssertIO doesFileExist fp
       postContent <- parseAsPandoc fp
+      pandocMeta
       let postName = fp
           postOutName = Nothing -- TODO
           postSrcBundle = Nothing
