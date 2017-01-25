@@ -21,6 +21,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 -- import qualified Text.Blaze.Html.Renderer.Text as B (renderHtml)
 import Text.Pandoc
 import Text.Pandoc.Definition
+import Text.Pandoc.Walk
 
 import Pickle.Types
 
@@ -97,41 +98,44 @@ myBody0 content = body $ do
       content
 
 -- | Render the whole html file, including all the extra crap
-assemble pg = docTypeHtml (myHead >> body pg)
+assemble pg = docTypeHtml (myHead >> body (myBody0 pg))
 
 --------------------------------------------------------------------------------
 
 myIndexPage :: Html -> Html -> Html -> Html
 myIndexPage h sub content = do
   myHeader h sub
-  myBody0 $ do
-    div ! class_ "content" $ do
-      content
+  div ! class_ "content" $ do
+    content
 
 myPage :: Html -> Html -> Html -> Html
 myPage h sub content = do
   myHeader h sub
-  myBody0 $ do
-    div ! class_ "content" $ do
-      content
-    br; a ! href "../" $ preEscapedString "&larr; back";
-    br;br;br
+  div ! class_ "content" $ do
+    content
+  br; a ! href "../" $ preEscapedString "&larr; back";
+  br;br;br
 
 renderPandoc :: Pandoc -> Html
 renderPandoc = writeHtml def
 
+pandocUnmeta = query go where
+  go (Str s) = s
+  go (Space) = " "
+  go s       = error ("[pandocUnmeta] fill in pattern " <> show s)
+
 myBlogPost :: Post -> Html
 myBlogPost post@Post{..} =
-  let metaHtml k f = maybeRender (f.show) (lookupMeta k (pandocMeta postContent))
+  let metaHtml k f = maybeRender (f . pandocUnmeta)
+                   $ lookupMeta k (pandocMeta postContent)
   in do
   myBlogHeader
-  myBody0 $ do
-    div ! class_ "content" $ do
-      div ! class_ "post" $ do
-        metaHtml "title" (h1.string)
-        metaHtml "subtitle" (\s -> i (string s) <> br <> br)
-        p ! A.style "color:gray;" $ do
-          metaHtml "date" string
-          metaHtml "updated" (\s -> string $ "(updated " <> s <> ")")
-        renderPandoc postContent
+  div ! class_ "content" $ do
+    div ! class_ "post" $ do
+      metaHtml "title" (h1.string)
+      metaHtml "subtitle" (\s -> i (string s) <> br <> br)
+      p ! A.style "color:gray;" $ do
+        metaHtml "date" string
+        metaHtml "updated" (\s -> string $ "(updated " <> s <> ")")
+      renderPandoc postContent
   -- TODO footer
