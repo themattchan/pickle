@@ -1,8 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Pickle.Template
-  ( myHeader
+  ( myBlogPost
+  , myPage
+  , myIndexPage
+  , assemble
   ) where
 
 import qualified Data.Text.Lazy as T
@@ -16,6 +19,12 @@ import Text.Blaze.Html5
 import Text.Blaze.Html5.Attributes hiding (title, style, form)
 import qualified Text.Blaze.Html5.Attributes as A
 -- import qualified Text.Blaze.Html.Renderer.Text as B (renderHtml)
+import Text.Pandoc
+import Text.Pandoc.Definition
+
+import Pickle.Types
+
+--------------------------------------------------------------------------------
 
 attrs = mconcat
 
@@ -23,8 +32,12 @@ cssImport link = string ("@import " <> show link <> ";")
 
 script0 = script ""
 
+maybeRender f = fromMaybe mempty . fmap f
+
 mathJax  = "MathJax.Hub.Config({ tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]} });"
 googAnalytics = "(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create', 'UA-22479172-1', 'auto');ga('send', 'pageview');"
+
+--------------------------------------------------------------------------------
 
 myHead :: Html
 myHead = head $ do
@@ -58,7 +71,8 @@ myHead = head $ do
 myHeader h sub = do
   header $ do
     h1 ! class_ "name pull-left" $ do
-      string h <> small (string sub)
+      h <> sub
+--      string h <> small (string sub)
   div ! A.style "clear:both" $ ""
 
 myBlogHeader = do
@@ -82,6 +96,19 @@ myBody0 content = body $ do
     div ! class_ "container" $ do
       content
 
+-- | Render the whole html file, including all the extra crap
+assemble pg = docTypeHtml (myHead >> body pg)
+
+--------------------------------------------------------------------------------
+
+myIndexPage :: Html -> Html -> Html -> Html
+myIndexPage h sub content = do
+  myHeader h sub
+  myBody0 $ do
+    div ! class_ "content" $ do
+      content
+
+myPage :: Html -> Html -> Html -> Html
 myPage h sub content = do
   myHeader h sub
   myBody0 $ do
@@ -90,13 +117,21 @@ myPage h sub content = do
     br; a ! href "../" $ preEscapedString "&larr; back";
     br;br;br
 
-myBlogPost :: String -> Maybe String -> Html -> Html
-myBlogPost blogTitle blogSubtitle date content = do
+renderPandoc :: Pandoc -> Html
+renderPandoc = writeHtml def
+
+myBlogPost :: Post -> Html
+myBlogPost post@Post{..} =
+  let metaHtml k f = maybeRender (f.show) (lookupMeta k (pandocMeta postContent))
+  in do
   myBlogHeader
   myBody0 $ do
     div ! class_ "content" $ do
       div ! class_ "post" $ do
-        h1 (string blogTitle)
-        fromMaybe mempty ((\s -> i (string s) <> br <> br) <$> blogSubtitle)
-        p ! style "color:gray;" $ ""
--- TODO
+        metaHtml "title" (h1.string)
+        metaHtml "subtitle" (\s -> i (string s) <> br <> br)
+        p ! A.style "color:gray;" $ do
+          metaHtml "date" string
+          metaHtml "updated" (\s -> string $ "(updated " <> s <> ")")
+        renderPandoc postContent
+  -- TODO footer
